@@ -11,20 +11,22 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TarefaDao {
 
-    // Insere uma nova tarefa. Se já existir (pelo id), substitui.
+    // ... (as funções inserir, atualizar, deletar ficam iguais) ...
     @Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE)
     suspend fun inserir(tarefa: Tarefa)
 
-    // Atualiza uma tarefa existente
     @Update
     suspend fun atualizar(tarefa: Tarefa)
 
-    // Deleta uma tarefa
     @Delete
     suspend fun deletar(tarefa: Tarefa)
 
-    // Busca todas as tarefas de um usuário específico
-    // Flow: O app "assiste" o banco. Se algo mudar, a lista na tela atualiza sozinha.
+    // Esta é a que o ViewModel usa (Flow, assíncrona)
     @Query("SELECT * FROM tarefas WHERE usuarioId = :idUsuario ORDER BY concluida ASC")
     fun getTarefasPorUsuario(idUsuario: String): Flow<List<Tarefa>>
+
+    // --- ADICIONE ESTA FUNÇÃO ---
+    // Usada pelo Repositório para limpar o cache local (Síncrona)
+    @Query("SELECT * FROM tarefas WHERE usuarioId = :idUsuario")
+    suspend fun getTarefasPorUsuarioSincrono(idUsuario: String): List<Tarefa>
 }

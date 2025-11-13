@@ -1,5 +1,6 @@
 package com.maycon.taskeasy.viewmodel
 
+// ... (imports ficam iguais) ...
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -11,32 +12,33 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
-// A ViewModel precisa do Repositório para funcionar
 class TarefaViewModel(private val repository: TarefaRepository) : ViewModel() {
 
-    // Começa como uma lista vazia. Só será preenchida após o login.
     private val _tarefas = MutableStateFlow<List<Tarefa>>(emptyList())
     val tarefas: StateFlow<List<Tarefa>> = _tarefas.asStateFlow()
 
     private var idUsuarioAtual: String? = null
 
-    // Função que a UI (HomeScreen) vai chamar após o login
     fun carregarTarefas(idUsuario: String) {
-        // Evita recarregar desnecessariamente se o ID não mudou
         if (idUsuario == idUsuarioAtual) return
         idUsuarioAtual = idUsuario
 
         viewModelScope.launch {
-            // "Ouve" o banco de dados (Flow) e atualiza o _tarefas (StateFlow)
+            // 1. Manda o Repositório buscar da nuvem e salvar no local
+            repository.carregarTarefasDoFirestore(idUsuario)
+
+            // 2. Ouve o banco local (que agora é um espelho da nuvem)
             repository.getTarefasPorUsuario(idUsuario)
-                .distinctUntilChanged() // Só atualiza se a lista realmente mudar
+                .distinctUntilChanged()
                 .collect { listaDeTarefas ->
                     _tarefas.value = listaDeTarefas
                 }
         }
     }
 
-    // Funções que a tela vai chamar (usando Corrotinas)
+    // ... (o resto do arquivo: inserir, atualizar, deletar e a Factory
+    //      ficam EXATAMENTE IGUAIS) ...
+
     fun inserir(tarefa: Tarefa) {
         viewModelScope.launch {
             repository.inserir(tarefa)
@@ -56,8 +58,7 @@ class TarefaViewModel(private val repository: TarefaRepository) : ViewModel() {
     }
 }
 
-// Isso é uma "Fábrica" (Factory)
-// Ela ensina o Android a criar nossa ViewModel passando o Repositório para ela.
+// ... (a Factory continua igual) ...
 class TarefaViewModelFactory(private val repository: TarefaRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TarefaViewModel::class.java)) {
